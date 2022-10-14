@@ -15,6 +15,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -23,12 +24,16 @@ public class RegisterActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
         mAuth = FirebaseAuth.getInstance();
+
+
 
         UserEmail =  findViewById(R.id.register_email);
         UserPassword =  findViewById(R.id.register_password);
@@ -43,6 +48,17 @@ public class RegisterActivity extends AppCompatActivity {
         });
     }
 
+
+
+
+
+    private void SendUserToMainActivity() {
+        Intent mainIntent = new Intent(getApplicationContext(), MainActivity.class);
+        mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(mainIntent);
+    }
+
+
     private void CreateNewAccount() {
 
         String email = UserEmail.getText().toString();
@@ -52,24 +68,25 @@ public class RegisterActivity extends AppCompatActivity {
         if(TextUtils.isEmpty(email)){
             Toast.makeText(getApplicationContext(), "Please write your email...", Toast.LENGTH_SHORT).show();
 
-        }else if(TextUtils.isEmpty(password)){
+        }else if(password.isEmpty()){
             Toast.makeText(getApplicationContext(), "Please write your password...", Toast.LENGTH_SHORT).show();
-        }else if(TextUtils.isEmpty(confirmPassword)){
+        }else if(confirmPassword.isEmpty()){
             Toast.makeText(getApplicationContext(), "Please confirm your password...", Toast.LENGTH_SHORT).show();
-        }else if(!password.equals(confirmPassword) ){
+        }else if(!password.equals(confirmPassword)){
             Toast.makeText(getApplicationContext(), "Not match...", Toast.LENGTH_SHORT).show();
         }else{
 
-            mAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                @Override
-                public void onComplete(@NonNull Task<AuthResult> task) {
-                    if(task.isSuccessful()){
-                        SendUserToSetupActivity();
-                        Toast.makeText(getApplicationContext(), "You are authenticated successfully", Toast.LENGTH_SHORT).show();
-                    }else{
-                        String message = task.getException().getMessage();
-                        Toast.makeText(getApplicationContext(), "Error occur: "+ message, Toast.LENGTH_SHORT).show();
-                    }
+            mAuth.createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                        @Override
+                            public void onComplete(@NonNull Task<AuthResult> task) {
+                            if(task.isSuccessful()){
+                                SendUserToSetupActivity();
+                                Toast.makeText(getApplicationContext(), "You are authenticated successfully", Toast.LENGTH_SHORT).show();
+                            }else{
+                                String message = task.getException().getMessage();
+                                Toast.makeText(getApplicationContext(), "Error occur: "+ message, Toast.LENGTH_SHORT).show();
+                            }
                 }
             });
         }

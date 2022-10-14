@@ -16,7 +16,11 @@ import android.widget.Toast;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -41,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mAuth = FirebaseAuth.getInstance();
+        UsersRef = FirebaseDatabase.getInstance().getReference().child("Users");
 
         mToolbar = findViewById(R.id.main_page_toolbar);
         setSupportActionBar(mToolbar);
@@ -85,10 +90,45 @@ public class MainActivity extends AppCompatActivity {
         if (currentUser == null) {
             SendUserToLoginActivity();
         }else{
-           // CheckUserExistence();
+            CheckUserExistence();
         }
 
 
+    }
+
+    private void CheckUserExistence() {
+
+        final String current_user_id = mAuth.getCurrentUser().getUid();
+
+        UsersRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                //if record not exist in realtimedatabase
+                if(!dataSnapshot.hasChild(current_user_id)){
+                    //most important in app
+                    Toast.makeText(getApplicationContext(), "Setup Activity", Toast.LENGTH_SHORT).show();
+                    SendUserToSetupActivity();
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+
+
+
+
+
+
+    }
+
+    private void SendUserToSetupActivity() {
+        Intent SetupIntent = new Intent(getApplicationContext(), SetupActivity.class);
+        SetupIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(SetupIntent);
+        finish();
     }
 
     private void SendUserToLoginActivity() {
