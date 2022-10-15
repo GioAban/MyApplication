@@ -1,21 +1,31 @@
 package com.example.myapplication;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.ContentResolver;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
+import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+import com.squareup.picasso.Picasso;
 
 import java.util.HashMap;
 
@@ -29,8 +39,10 @@ public class SetupActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private DatabaseReference UserRef;
+    StorageReference UserProfileImageRef;
 
     String currentUserID;
+    Uri ImageUri;
     final static int Galley_Pick = 1;
 
     @Override
@@ -41,12 +53,14 @@ public class SetupActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         currentUserID = mAuth.getCurrentUser().getUid();
         UserRef = FirebaseDatabase.getInstance().getReference().child("Users").child(currentUserID);
+        UserProfileImageRef = FirebaseStorage.getInstance().getReference().child("Profile Images");
 
         UserName = findViewById(R.id.setup_username);
         FullName = findViewById(R.id.setup_fullname);
         CountryName = findViewById(R.id.setup_country_name);
         SaveInformationButton = findViewById(R.id.setup_information_button);
         ProfileImage = findViewById(R.id.setup_profile_image);
+
 
         SaveInformationButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -58,15 +72,85 @@ public class SetupActivity extends AppCompatActivity {
         ProfileImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                //user pick gallery
                 Intent galleryIntent = new Intent();
-                galleryIntent.setAction(Intent.ACTION_GET_CONTENT);
                 galleryIntent.setType("image/*");
+                galleryIntent.setAction(Intent.ACTION_GET_CONTENT);
                 startActivityForResult(galleryIntent, Galley_Pick);
-
             }
         });
 
     }
+
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode==Galley_Pick && resultCode==RESULT_OK && data!=null){
+
+
+            //image uri value is user picked image
+            ImageUri = data.getData();
+
+            Picasso.with(this).load(ImageUri).into(ProfileImage);
+
+           uploadFile();
+
+
+
+        }
+
+    }
+
+    //just get the file extension
+    private String getFileExtension(Uri uri){
+        ContentResolver cR = getContentResolver();
+        MimeTypeMap mime = MimeTypeMap.getSingleton();
+        return  mime.getExtensionFromMimeType(cR.getType(uri));
+    }
+
+    private void uploadFile() {
+
+        if(ImageUri != null){
+
+            //dito sya nag lalagay
+            //palitan mo ang millli second
+            //pinangalanan at nag lagay ng proper extension
+            StorageReference fileReference = UserProfileImageRef.child(currentUserID
+            + "." + getFileExtension(ImageUri));
+
+            fileReference.putFile(ImageUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                    Toast.makeText(SetupActivity.this, "Upload success", Toast.LENGTH_SHORT).show();
+
+//                    Task<Uri> urlTask = taskSnapshot.getStorage().getDownloadUrl();
+//                    while (!urlTask.isSuccessful());
+//                    Uri downloadUrl = urlTask.getResult();
+//
+//                Upload upload = new Upload(UserName.getText().toString().trim(),downloadUrl.toString());
+//
+//                String uploadId = UserRef.push().getKey();
+//                    UserRef.child(uploadId).setValue(upload);
+//
+
+
+                    //SaveAccountSetupInformation();
+
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Toast.makeText(SetupActivity.this, "Fail to upload", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+        }else{
+            Toast.makeText(this, "No file selected", Toast.LENGTH_SHORT).show();
+        }
+
+   }
 
     private void SaveAccountSetupInformation() {
 
